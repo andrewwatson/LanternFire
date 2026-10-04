@@ -24,10 +24,10 @@ BRIGHTNESS_LEVELS = [0.10, 0.25, 0.50, 0.80]
 # Atmospheric fire vigor presets
 VIGOR_PRESETS = {
     "GENTLE": {
-        "baseline": 0.30,
-        "cooling_rate": 0.08,
-        "diffusion_rate": 0.14,
-        "turbulence": 0.06,
+        "baseline": 0.41,
+        "cooling_rate": 0.025,
+        "diffusion_rate": 0.16,
+        "turbulence": 0.020,
         "drift_speed": 3.5
     },
     "CAMPFIRE": {
@@ -96,9 +96,9 @@ class FireSimulation:
         self.phase = [[random.uniform(0, 2 * math.pi) for _ in range(width)] for _ in range(height)]
         self.elapsed_time = 0.0
 
-        self.brightness_idx = 1  # Default 0.25 (cozy)
+        self.brightness_idx = 3  # Default 0.80 (80% bright warm fire)
         self._brightness = BRIGHTNESS_LEVELS[self.brightness_idx]
-        self.vigor = "CAMPFIRE"
+        self.vigor = "GENTLE"
         self._load_vigor_params()
 
     def _load_vigor_params(self):

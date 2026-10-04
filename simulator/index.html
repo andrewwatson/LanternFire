@@ -920,11 +920,11 @@
           <span class="icon-tag">Preset Profile</span>
         </div>
         <div class="preset-group" role="radiogroup" aria-label="Fire vigor preset">
-          <button type="button" class="btn-preset" data-preset="GENTLE" id="btn-preset-gentle" role="radio" aria-checked="false">
+          <button type="button" class="btn-preset active" data-preset="GENTLE" id="btn-preset-gentle" role="radio" aria-checked="true">
             <span class="preset-icon">🕯️</span>
             <span>Gentle Hearth</span>
           </button>
-          <button type="button" class="btn-preset active" data-preset="CAMPFIRE" id="btn-preset-campfire" role="radio" aria-checked="true">
+          <button type="button" class="btn-preset" data-preset="CAMPFIRE" id="btn-preset-campfire" role="radio" aria-checked="false">
             <span class="preset-icon">🔥</span>
             <span>Campfire</span>
           </button>
@@ -939,19 +939,19 @@
       <div class="card">
         <div class="card-title">
           <span>Optical Brightness</span>
-          <span class="icon-tag" id="val-bright-text">25% (Cozy)</span>
+          <span class="icon-tag" id="val-bright-text">80% (Bright)</span>
         </div>
         <div class="slider-row">
           <div class="slider-header">
             <span>Global Luminance Scale</span>
-            <span class="val-badge" id="val-bright">0.25</span>
+            <span class="val-badge" id="val-bright">0.80</span>
           </div>
-          <input type="range" id="slider-brightness" min="0.00" max="1.00" step="0.01" value="0.25" aria-label="Global Brightness">
+          <input type="range" id="slider-brightness" min="0.00" max="1.00" step="0.01" value="0.80" aria-label="Global Brightness">
           <div class="chip-group" aria-label="Hardware Brightness Presets">
             <button type="button" class="chip" data-b="0.10">10% Night</button>
-            <button type="button" class="chip active" data-b="0.25">25% Cozy</button>
+            <button type="button" class="chip" data-b="0.25">25% Cozy</button>
             <button type="button" class="chip" data-b="0.50">50% Std</button>
-            <button type="button" class="chip" data-b="0.80">80% Bright</button>
+            <button type="button" class="chip active" data-b="0.80">80% Bright</button>
           </div>
         </div>
       </div>
@@ -1121,10 +1121,10 @@
     const VIGOR_PRESETS = {
       GENTLE: {
         name: "Gentle Hearth",
-        baseline: 0.30,
-        cooling_rate: 0.08,
-        diffusion_rate: 0.14,
-        turbulence: 0.06,
+        baseline: 0.41,
+        cooling_rate: 0.025,
+        diffusion_rate: 0.16,
+        turbulence: 0.020,
         drift_speed: 3.5
       },
       CAMPFIRE: {
@@ -1195,9 +1195,9 @@
         );
         this.elapsedTime = 0.0;
 
-        this.brightnessIdx = 1; // Default 0.25 (cozy)
-        this.customBrightness = 0.25;
-        this.vigor = "CAMPFIRE";
+        this.brightnessIdx = 3; // Default 0.80 (80% bright warm fire)
+        this.customBrightness = 0.80;
+        this.vigor = "GENTLE";
         this.loadVigorParams();
       }
 

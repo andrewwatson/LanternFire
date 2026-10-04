@@ -11,7 +11,7 @@ Pressing any key feeds fuel and heat into that coal, radiating warmth outwards a
 ## Features
 
 - **Continuous Thermal Physics Engine**: A $4 \times 4$ cellular heat model calculating real-time diffusion, baseline cooling decay, harmonic sine breathing waves, and atmospheric micro-turbulence at ~35 FPS.
-- **Organic Ember Color Palette**: 4-stop piecewise linear interpolation reproducing authentic blackbody charcoal hues—from dormant ruby coals (`#0F0000`) through smoldering red-orange and flame amber up to incandescent stoke flare (`#FFE682`).
+- **Organic Ember Color Palette**: 4-stop piecewise linear interpolation reproducing authentic glowing ember hues—from deep ruby coals (`#5A0200`) through smoldering flame red (`#DC1900`), fiery orange (`#FF5500`), and warm amber (`#FF9B00`) up to radiant incandescent gold (`#FFD70F`) with no washed-out white.
 - **Tactile Stoking**: Tapping any key instantly ignites that cell to peak heat ($1.0$) and conducts thermal energy to adjacent orthogonal ($+0.45$) and diagonal ($+0.20$) neighbors.
 - **Atmospheric Fire Vigor Presets**:
   - **Gentle Hearth**: Soft, soothing smolder with low turbulence and quiet breathing.
@@ -132,7 +132,7 @@ The physical 4×4 NeoTrellis hardware indices are mapped into a coordinate grid 
 
 | Key | Position | Function | Behavior |
 |---|---|---|---|
-| **Key 15** | Row 0, Col 0 (Top-Left) | **Brightness Cycle** | Cycles brightness: **10%** (nightlight) $\to$ **25%** (cozy default) $\to$ **50%** (ambient) $\to$ **80%** (bright). Brief white flash confirms change. |
+| **Key 15** | Row 0, Col 0 (Top-Left) | **Brightness Cycle** | Cycles brightness: **35%** (dim) $\to$ **60%** (warm) $\to$ **85%** (high) $\to$ **100%** (full radiant default). Brief gold flash confirms change. |
 | **Key 11** | Row 0, Col 1 (Top-Second) | **Vigor Preset Cycle** | Cycles atmospheric mode: **Gentle Hearth** $\to$ **Campfire** $\to$ **Windblown Blaze**. Brief amber flash confirms change. |
 | **Key 7** | Row 0, Col 2 (Top-Third) | **Wind Gust / Bellows** | Sweeps a sudden gust across the fire, injecting random heat spikes into ~60% of the coals. |
 | **Key 3** | Row 0, Col 3 (Top-Right) | **Sleep / Standby Mode** | Smoothly fades the lantern to black over ~1.5 seconds. Switches to low-frequency power-save polling. |
@@ -161,10 +161,10 @@ Heat values $T \in [0.0, 1.0]$ are mapped to RGB through 4 color stops, scaled b
 
 | Heat Range $T$ | State / Appearance | Stop 1 RGB $\to$ Stop 2 RGB | Hex Swatch |
 |---|---|---|---|
-| `0.00 – 0.15` | Dormant Coal / Deep Ruby Ember | `(15, 0, 0)` $\to$ `(60, 4, 0)` | `#0F0000` $\to$ `#3C0400` |
-| `0.15 – 0.45` | Smoldering Ember / Red-Orange | `(60, 4, 0)` $\to$ `(190, 35, 0)` | `#3C0400` $\to$ `#BE2300` |
-| `0.45 – 0.75` | Active Flame / Warm Amber Gold | `(190, 35, 0)` $\to$ `(255, 110, 0)` | `#BE2300` $\to$ `#FF6E00` |
-| `0.75 – 1.00` | Incandescent Core / Stoke Flare | `(255, 110, 0)` $\to$ `(255, 230, 130)` | `#FF6E00` $\to$ `#FFE682` |
+| `0.00 – 0.25` | Deep Ruby Ember $\to$ Vibrant Fire Red | `(90, 2, 0)` $\to$ `(220, 25, 0)` | `#5A0200` $\to$ `#DC1900` |
+| `0.25 – 0.55` | Vibrant Fire Red $\to$ Fiery Orange | `(220, 25, 0)` $\to$ `(255, 85, 0)` | `#DC1900` $\to$ `#FF5500` |
+| `0.55 – 0.80` | Fiery Orange $\to$ Warm Golden Amber | `(255, 85, 0)` $\to$ `(255, 155, 0)` | `#FF5500` $\to$ `#FF9B00` |
+| `0.80 – 1.00` | Golden Amber $\to$ Incandescent Radiant Gold | `(255, 155, 0)` $\to$ `(255, 215, 15)` | `#FF9B00` $\to$ `#FFD70F` |
 
 ---
 

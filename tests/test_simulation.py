@@ -18,24 +18,24 @@ class TestFireSimulation(unittest.TestCase):
     def test_heat_to_rgb_clamping_and_stops(self):
         # Test boundary values
         c0 = heat_to_rgb(0.0, 1.0)
-        self.assertEqual(c0, (15, 0, 0))
+        self.assertEqual(c0, (90, 2, 0))
 
-        c_mid = heat_to_rgb(0.45, 1.0)
-        self.assertEqual(c_mid, (190, 35, 0))
+        c_mid = heat_to_rgb(0.55, 1.0)
+        self.assertEqual(c_mid, (255, 85, 0))
 
         c_max = heat_to_rgb(1.0, 1.0)
-        self.assertEqual(c_max, (255, 230, 130))
+        self.assertEqual(c_max, (255, 215, 15))
 
         # Test out of bounds inputs get clamped
         c_under = heat_to_rgb(-0.5, 1.0)
-        self.assertEqual(c_under, (15, 0, 0))
+        self.assertEqual(c_under, (90, 2, 0))
 
         c_over = heat_to_rgb(1.5, 1.0)
-        self.assertEqual(c_over, (255, 230, 130))
+        self.assertEqual(c_over, (255, 215, 15))
 
         # Test brightness scaling
         c_dim = heat_to_rgb(1.0, 0.5)
-        self.assertEqual(c_dim, (127, 115, 65))
+        self.assertEqual(c_dim, (127, 107, 7))
 
         # Channel bounds
         for heat in [0.0, 0.1, 0.25, 0.5, 0.75, 0.9, 1.0]:
@@ -100,10 +100,10 @@ class TestFireSimulation(unittest.TestCase):
         # continuous set_brightness
         sim.set_brightness(0.20)
         self.assertAlmostEqual(sim.brightness, 0.20, places=2)
-        # Closest preset to 0.20 is index 1 (0.25). Next cycle should pick up index 2 (0.50).
+        # Closest preset to 0.20 is index 0 (0.35). Next cycle should pick up index 1 (0.60).
         next_b = sim.cycle_brightness()
-        self.assertEqual(next_b, 0.50)
-        self.assertEqual(sim.brightness, 0.50)
+        self.assertEqual(next_b, 0.60)
+        self.assertEqual(sim.brightness, 0.60)
 
         # Clamping
         sim.set_brightness(1.5)

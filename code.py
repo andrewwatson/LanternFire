@@ -51,7 +51,7 @@ def handle_key(event):
             b = sim.cycle_brightness()
             print(f"Brightness set to: {int(b * 100)}%")
             # Quick flash at key 15
-            trellis.pixels[15] = (255, 255, 255)
+            trellis.pixels[15] = (255, 200, 0)
             trellis.pixels.show()
             time.sleep(0.05)
             return

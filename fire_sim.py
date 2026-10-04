@@ -19,7 +19,7 @@ for y in range(4):
         INDEX_TO_XY[GRID[y][x]] = (x, y)
 
 # Predefined brightness levels
-BRIGHTNESS_LEVELS = [0.10, 0.25, 0.50, 0.80]
+BRIGHTNESS_LEVELS = [0.35, 0.60, 0.85, 1.00]
 
 # Atmospheric fire vigor presets
 VIGOR_PRESETS = {
@@ -48,10 +48,11 @@ VIGOR_PRESETS = {
 VIGOR_ORDER = ["GENTLE", "CAMPFIRE", "BLAZE"]
 
 def _lerp_color(c1, c2, t):
+    t_clamped = max(0.0, min(1.0, float(t)))
     return (
-        int(c1[0] + (c2[0] - c1[0]) * t),
-        int(c1[1] + (c2[1] - c1[1]) * t),
-        int(c1[2] + (c2[2] - c1[2]) * t)
+        int(round(c1[0] + (c2[0] - c1[0]) * t_clamped)),
+        int(round(c1[1] + (c2[1] - c1[1]) * t_clamped)),
+        int(round(c1[2] + (c2[2] - c1[2]) * t_clamped))
     )
 
 def heat_to_rgb(heat, brightness=1.0):
@@ -63,22 +64,22 @@ def heat_to_rgb(heat, brightness=1.0):
     b = max(0.0, min(1.0, float(brightness)))
 
     # Color stops
-    # 0.00 -> 0.15: (15, 0, 0) -> (60, 4, 0)
-    # 0.15 -> 0.45: (60, 4, 0) -> (190, 35, 0)
-    # 0.45 -> 0.75: (190, 35, 0) -> (255, 110, 0)
-    # 0.75 -> 1.00: (255, 110, 0) -> (255, 230, 130)
-    if h <= 0.15:
-        t = h / 0.15
-        rgb = _lerp_color((15, 0, 0), (60, 4, 0), t)
-    elif h <= 0.45:
-        t = (h - 0.15) / 0.30
-        rgb = _lerp_color((60, 4, 0), (190, 35, 0), t)
-    elif h <= 0.75:
-        t = (h - 0.45) / 0.30
-        rgb = _lerp_color((190, 35, 0), (255, 110, 0), t)
+    # 0.00 -> 0.25: (90, 2, 0) -> (220, 25, 0) (rich deep ruby ember to vibrant fire red)
+    # 0.25 -> 0.55: (220, 25, 0) -> (255, 85, 0) (vibrant fiery orange)
+    # 0.55 -> 0.80: (255, 85, 0) -> (255, 155, 0) (warm golden amber)
+    # 0.80 -> 1.00: (255, 155, 0) -> (255, 215, 15) (incandescent hot golden core, no cool white!)
+    if h <= 0.25:
+        t = h / 0.25
+        rgb = _lerp_color((90, 2, 0), (220, 25, 0), t)
+    elif h <= 0.55:
+        t = (h - 0.25) / 0.30
+        rgb = _lerp_color((220, 25, 0), (255, 85, 0), t)
+    elif h <= 0.80:
+        t = (h - 0.55) / 0.25
+        rgb = _lerp_color((255, 85, 0), (255, 155, 0), t)
     else:
-        t = (h - 0.75) / 0.25
-        rgb = _lerp_color((255, 110, 0), (255, 230, 130), t)
+        t = (h - 0.80) / 0.20
+        rgb = _lerp_color((255, 155, 0), (255, 215, 15), t)
 
     return (
         max(0, min(255, int(rgb[0] * b))),

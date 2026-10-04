@@ -848,8 +848,8 @@
   <header>
     <div class="badge-bar">
       <span class="badge active pulse-dot" id="badge-status">Simulation Active</span>
-      <span class="badge" id="badge-vigor">Preset: Campfire</span>
-      <span class="badge" id="badge-bright">Brightness: 25%</span>
+      <span class="badge" id="badge-vigor">Preset: Gentle Hearth</span>
+      <span class="badge" id="badge-bright">Brightness: 100%</span>
       <span class="badge" id="badge-fps">60 FPS</span>
     </div>
     <h1>Lantern Fire</h1>
@@ -939,19 +939,19 @@
       <div class="card">
         <div class="card-title">
           <span>Optical Brightness</span>
-          <span class="icon-tag" id="val-bright-text">80% (Bright)</span>
+          <span class="icon-tag" id="val-bright-text">100% (Full Radiant)</span>
         </div>
         <div class="slider-row">
           <div class="slider-header">
             <span>Global Luminance Scale</span>
-            <span class="val-badge" id="val-bright">0.80</span>
+            <span class="val-badge" id="val-bright">1.00</span>
           </div>
-          <input type="range" id="slider-brightness" min="0.00" max="1.00" step="0.01" value="0.80" aria-label="Global Brightness">
+          <input type="range" id="slider-brightness" min="0.00" max="1.00" step="0.01" value="1.00" aria-label="Global Brightness">
           <div class="chip-group" aria-label="Hardware Brightness Presets">
-            <button type="button" class="chip" data-b="0.10">10% Night</button>
-            <button type="button" class="chip" data-b="0.25">25% Cozy</button>
-            <button type="button" class="chip" data-b="0.50">50% Std</button>
-            <button type="button" class="chip active" data-b="0.80">80% Bright</button>
+            <button type="button" class="chip" data-b="0.35">35% Dim</button>
+            <button type="button" class="chip" data-b="0.60">60% Warm</button>
+            <button type="button" class="chip" data-b="0.85">85% High</button>
+            <button type="button" class="chip active" data-b="1.00">100% Full</button>
           </div>
         </div>
       </div>
@@ -1116,7 +1116,7 @@
       }
     }
 
-    const BRIGHTNESS_LEVELS = [0.10, 0.25, 0.50, 0.80];
+    const BRIGHTNESS_LEVELS = [0.35, 0.60, 0.85, 1.00];
 
     const VIGOR_PRESETS = {
       GENTLE: {
@@ -1149,10 +1149,11 @@
 
     // Multi-stop piecewise linear interpolation matching fire_sim.py
     function lerpColor(c1, c2, t) {
+      const tClamped = Math.max(0.0, Math.min(1.0, Number(t)));
       return [
-        Math.trunc(c1[0] + (c2[0] - c1[0]) * t),
-        Math.trunc(c1[1] + (c2[1] - c1[1]) * t),
-        Math.trunc(c1[2] + (c2[2] - c1[2]) * t)
+        Math.round(c1[0] + (c2[0] - c1[0]) * tClamped),
+        Math.round(c1[1] + (c2[1] - c1[1]) * tClamped),
+        Math.round(c1[2] + (c2[2] - c1[2]) * tClamped)
       ];
     }
 
@@ -1161,18 +1162,23 @@
       const b = Math.max(0.0, Math.min(1.0, Number(brightness)));
       let rgb;
 
-      if (h <= 0.15) {
-        const t = h / 0.15;
-        rgb = lerpColor([15, 0, 0], [60, 4, 0], t);
-      } else if (h <= 0.45) {
-        const t = (h - 0.15) / 0.30;
-        rgb = lerpColor([60, 4, 0], [190, 35, 0], t);
-      } else if (h <= 0.75) {
-        const t = (h - 0.45) / 0.30;
-        rgb = lerpColor([190, 35, 0], [255, 110, 0], t);
+      // Color stops:
+      // 0.00 -> 0.25: (90, 2, 0) -> (220, 25, 0) (rich deep ruby ember to vibrant fire red)
+      // 0.25 -> 0.55: (220, 25, 0) -> (255, 85, 0) (vibrant fiery orange)
+      // 0.55 -> 0.80: (255, 85, 0) -> (255, 155, 0) (warm golden amber)
+      // 0.80 -> 1.00: (255, 155, 0) -> (255, 215, 15) (incandescent hot golden core, no cool white!)
+      if (h <= 0.25) {
+        const t = h / 0.25;
+        rgb = lerpColor([90, 2, 0], [220, 25, 0], t);
+      } else if (h <= 0.55) {
+        const t = (h - 0.25) / 0.30;
+        rgb = lerpColor([220, 25, 0], [255, 85, 0], t);
+      } else if (h <= 0.80) {
+        const t = (h - 0.55) / 0.25;
+        rgb = lerpColor([255, 85, 0], [255, 155, 0], t);
       } else {
-        const t = (h - 0.75) / 0.25;
-        rgb = lerpColor([255, 110, 0], [255, 230, 130], t);
+        const t = (h - 0.80) / 0.20;
+        rgb = lerpColor([255, 155, 0], [255, 215, 15], t);
       }
 
       return [
@@ -1195,8 +1201,8 @@
         );
         this.elapsedTime = 0.0;
 
-        this.brightnessIdx = 3; // Default 0.80 (80% bright warm fire)
-        this.customBrightness = 0.80;
+        this.brightnessIdx = 3; // Default 1.00 (100% full radiant fire)
+        this.customBrightness = 1.00;
         this.vigor = "GENTLE";
         this.loadVigorParams();
       }
@@ -1513,7 +1519,7 @@
         if (keyId === 15) {
           // Key 15: Brightness cycle
           const b = sim.cycleBrightness();
-          triggerKeyFlash(15, [255, 255, 255]);
+          triggerKeyFlash(15, [255, 200, 0]);
           updateBrightnessUI(b);
           return;
         } else if (keyId === 11) {
@@ -1537,7 +1543,7 @@
 
       // Default: Stoke coals!
       sim.stoke(keyId);
-      triggerKeyFlash(keyId, [255, 230, 130]);
+      triggerKeyFlash(keyId, [255, 215, 15]);
     }
 
     function onKeyPointerDown(e, keyId, keyEl) {
@@ -1642,10 +1648,10 @@
     });
 
     function getBrightnessDescription(b) {
-      if (b <= 0.15) return `${Math.round(b * 100)}% (Nightlight)`;
-      if (b <= 0.35) return `${Math.round(b * 100)}% (Cozy)`;
-      if (b <= 0.65) return `${Math.round(b * 100)}% (Standard)`;
-      return `${Math.round(b * 100)}% (Bright)`;
+      if (b <= 0.40) return `${Math.round(b * 100)}% (Dim)`;
+      if (b <= 0.70) return `${Math.round(b * 100)}% (Warm)`;
+      if (b <= 0.90) return `${Math.round(b * 100)}% (High)`;
+      return `${Math.round(b * 100)}% (Full Radiant)`;
     }
 
     function updateBrightnessUI(b, syncSlider = true) {
@@ -1786,7 +1792,7 @@
           if (!entry.flashTimer) {
             // Incandescent core glow calculation
             const coreAlpha = Math.min(1.0, heat * 0.75 * sleepFade);
-            entry.element.style.background = `radial-gradient(circle at 50% 50%, rgba(255, 240, 200, ${coreAlpha}) 0%, rgb(${r}, ${g}, ${b}) 70%)`;
+            entry.element.style.background = `radial-gradient(circle at 50% 50%, rgba(255, 215, 30, ${coreAlpha}) 0%, rgb(${r}, ${g}, ${b}) 70%)`;
             
             // Bloom box-shadow
             const glowStrength = (0.3 + heat * 0.7) * sleepFade;

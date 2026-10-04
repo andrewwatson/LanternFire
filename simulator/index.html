@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LanternFire - NeoTrellis 4×4 Hearth & Ember Simulator</title>
+  <meta name="description" content="Autonomous thermal simulation and glowing ember bed for Adafruit NeoTrellis 4x4 keypad.">
+  <style>
+    :root {
+      --bg-dark: #0a0908;
+      --bg-card: rgba(22, 20, 18, 0.85);
+      --bg-card-border: rgba(255, 180, 80, 0.15);
+      --iron-dark: #121110;
+      --iron-mid: #242220;
+      --iron-light: #3a3632;
+      --brass-gold: #d4a347;
+      --brass-bright: #f0c568;
+      --brass-shadow: #8a641d;
+      --ember-red: #ff3b00;
+      --ember-amber: #ff8800;
+      --ember-gold: #ffcc00;
+      --text-main: #f5ede4;
+      --text-muted: #a3978b;
+      --text-dim: #6b6257;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(60, 30, 10, 0.25) 0%, transparent 60%),
+        radial-gradient(circle at 50% 85%, rgba(20, 15, 10, 0.8) 0%, transparent 70%);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 24px 16px 48px;
+      overflow-x: hidden;
+    }
+
+    /* Header & Branding */
+    header {
+      text-align: center;
+      margin-bottom: 24px;
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .badge-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-muted);
+    }
+
+    .badge.active {
+      background: rgba(255, 136, 0, 0.15);
+      border-color: rgba(255, 136, 0, 0.4);
+      color: var(--brass-bright);
+    }
+
+    .badge.pulse-dot::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ff5500;
+      box-shadow: 0 0 6px #ff7700;
+      animation: pulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: scale(0.9); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #fff4ea;
+      text-shadow: 0 0 20px rgba(255, 136, 0, 0.4), 0 2px 4px rgba(0, 0, 0, 0.9);
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+    }
+
+    /* Main Container Split */
+    .app-container {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: center;
+      gap: 32px;
+      max-width: 1120px;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    /* Lantern Viewport & Stage */
+    .lantern-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex: 1 1 420px;
+      max-width: 500px;
+      position: relative;
+    }
+
+    /* Lantern Enclosure Aesthetic */
+    .lantern-enclosure {
+      width: 100%;
+      background: linear-gradient(180deg, #1c1a18 0%, #100f0d 100%);
+      border-radius: 20px;
+      border: 2px solid #2e2a26;
+      box-shadow: 
+        0 15px 45px rgba(0, 0, 0, 0.9),
+        inset 0 1px 1px rgba(255, 255, 255, 0.15),
+        inset 0 -2px 6px rgba(0, 0, 0, 0.8);
+      position: relative;
+      overflow: hidden;
+      padding: 24px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Lantern Cap / Canopy */
+    .lantern-cap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 20px;
+      position: relative;
+    }
+
+    .lantern-ring {
+      width: 44px;
+      height: 20px;
+      border: 4px solid var(--brass-gold);
+      border-radius: 20px 20px 0 0;
+      box-shadow: 0 0 10px rgba(212, 163, 71, 0.25), inset 0 2px 2px rgba(255, 255, 255, 0.4);
+      margin-bottom: -2px;
+    }
+
+    .lantern-roof {
+      width: 85%;
+      height: 18px;
+      background: linear-gradient(180deg, #3d3731 0%, #211e1a 100%);
+      border-radius: 8px 8px 0 0;
+      border-top: 2px solid #574e46;
+      border-left: 2px solid #2e2a26;
+      border-right: 2px solid #2e2a26;
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.2);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .vent-slit {
+      width: 16px;
+      height: 3px;
+      background: #080807;
+      border-radius: 2px;
+      box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Glass Chamber & Frame Pillars */
+    .lantern-chamber {
+      width: 100%;
+      background: radial-gradient(circle at 50% 50%, #151311 0%, #0c0b0a 100%);
+      border-radius: 14px;
+      border: 1px solid #282420;
+      position: relative;
+      padding: 28px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: inset 0 0 35px rgba(0, 0, 0, 0.95);
+    }
+
+    /* Subtle Glass Sheen Reflection */
+    .lantern-glass-glare {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 14px;
+      background: linear-gradient(135deg, 
+        rgba(255, 255, 255, 0.05) 0%, 
+        rgba(255, 255, 255, 0.01) 30%, 
+        transparent 50%, 
+        rgba(255, 200, 100, 0.02) 80%,
+        transparent 100%);
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Hearth Floor Base & Dynamic Radial Glow */
+    .hearth-floor {
+      position: absolute;
+      bottom: 12px;
+      left: 20px;
+      right: 20px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse at 50% 50%, rgba(255, 68, 0, 0.25) 0%, transparent 70%);
+      filter: blur(28px);
+      pointer-events: none;
+      z-index: 1;
+      transition: background 0.15s ease-out, opacity 0.3s ease;
+    }
+
+    /* NeoTrellis PCB Enclosure */
+    .neotrellis-pcb {
+      position: relative;
+      z-index: 5;
+      background: #111112;
+      border: 2px solid #222226;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 
+        0 10px 30px rgba(0, 0, 0, 0.9),
+        inset 0 1px 1px rgba(255, 255, 255, 0.1),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Corner Screws / PCB Detailing */
+    .pcb-corner-screw {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #504838;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.4), 0 1px 2px rgba(0, 0, 0, 0.8);
+    }
+    .screw-tl { top: 7px; left: 7px; }
+    .screw-tr { top: 7px; right: 7px; }
+    .screw-bl { bottom: 7px; left: 7px; }
+    .screw-br { bottom: 7px; right: 7px; }
+
+    .pcb-header-label {
+      font-size: 9px;
+      font-family: var(--font-mono);
+      letter-spacing: 0.15em;
+      color: #645a4e;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0 4px;
+    }
+
+    /* 4x4 Keypad Elastomer Grid */
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 12px;
+      padding: 6px;
+      background: rgba(5, 5, 5, 0.6);
+      border-radius: 12px;
+      border: 1px solid #1a1a1c;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Frosted Silicone Rubber Keycaps */
+    .keycap {
+      width: 66px;
+      height: 66px;
+      border-radius: 10px;
+      position: relative;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(30, 15, 10, 0.9);
+      box-shadow: 
+        0 0 14px rgba(255, 60, 0, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.4),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.6);
+      transition: transform 0.08s ease, filter 0.08s ease;
+      touch-action: manipulation;
+      overflow: hidden;
+    }
+
+    .keycap:hover {
+      filter: brightness(1.15);
+      border-color: rgba(255, 255, 255, 0.35);
+    }
+
+    .keycap:active, .keycap.pressed {
+      transform: scale(0.94);
+      filter: brightness(1.3);
+      box-shadow: 
+        0 0 24px rgba(255, 200, 100, 0.8),
+        inset 0 0 8px rgba(255, 255, 255, 0.6);
+    }
+
+    /* Silicone Frosted Core Light Guide */
+    .keycap::before {
+      content: "";
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, transparent 70%);
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    /* Subtle Silicone Surface Texture */
+    .keycap::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      right: 2px;
+      height: 12px;
+      border-radius: 6px 6px 0 0;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0%, transparent 100%);
+      pointer-events: none;
+    }
+
+    /* Key Labels and Indicators */
+    .key-index {
+      position: absolute;
+      top: 4px;
+      left: 5px;
+      font-size: 9px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.6);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+      pointer-events: none;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+
+    .key-shortcut {
+      position: absolute;
+      bottom: 4px;
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.45);
+      color: #ffde99;
+      pointer-events: none;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 200, 100, 0.25);
+    }
+
+    .key-heat-val {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 6px rgba(0, 0, 0, 0.7);
+      background: rgba(0, 0, 0, 0.55);
+      padding: 1px 4px;
+      border-radius: 4px;
+      pointer-events: none;
+      display: none;
+      z-index: 4;
+    }
+
+    .show-heat .key-heat-val {
+      display: block;
+    }
+
+    .show-heat .key-shortcut {
+      display: none;
+    }
+
+    /* Guidance under lantern */
+    .lantern-guidance {
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .lantern-guidance strong {
+      color: var(--brass-bright);
+    }
+
+    /* Control Panel Drawer / Controls */
+    .controls-panel {
+      flex: 1 1 380px;
+      max-width: 460px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--bg-card-border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--brass-bright);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title .icon-tag {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-dim);
+      font-weight: 500;
+    }
+
+    /* Presets Segmented Buttons */
+    .preset-group {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .btn-preset {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 8px;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .btn-preset .preset-icon {
+      font-size: 16px;
+    }
+
+    .btn-preset:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-main);
+      border-color: rgba(255, 200, 100, 0.25);
+    }
+
+    .btn-preset.active {
+      background: linear-gradient(180deg, rgba(255, 136, 0, 0.22) 0%, rgba(255, 85, 0, 0.12) 100%);
+      border-color: var(--ember-amber);
+      color: #fff3dc;
+      box-shadow: 0 0 14px rgba(255, 136, 0, 0.25);
+    }
+
+    /* Sliders and Input Rows */
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .slider-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .slider-header .val-badge {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--brass-bright);
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #25221e;
+      outline: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ffbb44 0%, #d4820a 100%);
+      box-shadow: 0 0 8px rgba(255, 150, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      border: 1px solid #7c4c00;
+      transition: transform 0.1s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.15);
+      background: #ffcc55;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ffbb44 0%, #d4820a 100%);
+      box-shadow: 0 0 8px rgba(255, 150, 0, 0.6);
+      cursor: pointer;
+      border: 1px solid #7c4c00;
+    }
+
+    /* Quick Preset Chips */
+    .chip-group {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 10px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.12s;
+    }
+
+    .chip:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+    }
+
+    .chip.active {
+      border-color: var(--brass-gold);
+      color: var(--brass-bright);
+      background: rgba(212, 163, 71, 0.12);
+    }
+
+    /* Action Trigger Buttons */
+    .action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .btn-action {
+      background: linear-gradient(180deg, #2a241e 0%, #1a1714 100%);
+      border: 1px solid #4a3e30;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff3dc;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      transition: all 0.12s ease;
+    }
+
+    .btn-action:hover {
+      background: linear-gradient(180deg, #383028 0%, #221e1a 100%);
+      border-color: var(--brass-gold);
+      box-shadow: 0 0 12px rgba(212, 163, 71, 0.3);
+    }
+
+    .btn-action:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+    }
+
+    .btn-action.primary {
+      background: linear-gradient(180deg, #7a3500 0%, #471d00 100%);
+      border-color: #ff6600;
+      box-shadow: 0 0 12px rgba(255, 102, 0, 0.3);
+    }
+
+    .btn-action.primary:hover {
+      background: linear-gradient(180deg, #994400 0%, #592400 100%);
+      box-shadow: 0 0 18px rgba(255, 102, 0, 0.5);
+    }
+
+    /* Toggles / Switches */
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 7px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .toggle-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .toggle-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toggle-label span {
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 38px;
+      height: 20px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .switch-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #242220;
+      transition: .2s;
+      border-radius: 20px;
+      border: 1px solid #3d3832;
+    }
+
+    .switch-slider:before {
+      position: absolute;
+      content: "";
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
+      background-color: #a89d91;
+      transition: .2s;
+      border-radius: 50%;
+    }
+
+    input:checked + .switch-slider {
+      background-color: #a35000;
+      border-color: #ff7700;
+    }
+
+    input:checked + .switch-slider:before {
+      transform: translateX(18px);
+      background-color: #ffeedd;
+      box-shadow: 0 0 6px rgba(255, 136, 0, 0.8);
+    }
+
+    /* Diagnostics Telemetry */
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .telemetry-item {
+      background: rgba(0, 0, 0, 0.35);
+      border-radius: 8px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .telemetry-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 3px;
+    }
+
+    .telemetry-value {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--brass-bright);
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .telemetry-value small {
+      font-size: 10px;
+      color: var(--text-dim);
+      font-weight: 400;
+    }
+
+    /* Standby Overlay Notice */
+    .standby-banner {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(10, 8, 7, 0.92);
+      border: 1px solid var(--brass-gold);
+      border-radius: 12px;
+      padding: 16px 24px;
+      text-align: center;
+      z-index: 25;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.95);
+      display: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .standby-banner h3 {
+      font-size: 14px;
+      color: var(--brass-bright);
+      margin-bottom: 4px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .standby-banner p {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .is-asleep .standby-banner {
+      display: block;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 36px;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+    }
+
+    footer a {
+      color: var(--brass-gold);
+      text-decoration: none;
+    }
+
+    @media (max-width: 860px) {
+      .app-container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .lantern-stage, .controls-panel {
+        max-width: 100%;
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 440px) {
+      .keycap {
+        width: 54px;
+        height: 54px;
+      }
+      .keypad-grid {
+        gap: 8px;
+        padding: 4px;
+      }
+      .neotrellis-pcb {
+        padding: 12px 10px;
+      }
+      h1 {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="badge-bar">
+      <span class="badge active pulse-dot" id="badge-status">Simulation Active</span>
+      <span class="badge" id="badge-vigor">Preset: Campfire</span>
+      <span class="badge" id="badge-bright">Brightness: 25%</span>
+      <span class="badge" id="badge-fps">60 FPS</span>
+    </div>
+    <h1>Lantern Fire</h1>
+    <p class="subtitle">Adafruit NeoTrellis 4×4 Thermal Hearth & Glowing Ember Simulator</p>
+  </header>
+
+  <main class="app-container">
+
+    <!-- Left: Photorealistic Lantern Stage -->
+    <section class="lantern-stage" aria-label="Lantern Hearth">
+      <div class="lantern-enclosure" id="lantern-housing">
+        
+        <!-- Lantern Roof Canopy -->
+        <div class="lantern-cap">
+          <div class="lantern-ring" aria-hidden="true"></div>
+          <div class="lantern-roof">
+            <div class="vent-slit"></div>
+            <div class="vent-slit"></div>
+            <div class="vent-slit"></div>
+          </div>
+        </div>
+
+        <!-- Glass Hearth Chamber -->
+        <div class="lantern-chamber">
+          <div class="lantern-glass-glare" aria-hidden="true"></div>
+          <div class="hearth-floor" id="hearth-glow" aria-hidden="true"></div>
+
+          <!-- Standby Wake Banner -->
+          <div class="standby-banner" id="standby-banner" role="alert">
+            <h3>Standby Mode</h3>
+            <p>Embers asleep. Tap any key to stoke & wake.</p>
+          </div>
+
+          <!-- NeoTrellis PCB Module -->
+          <div class="neotrellis-pcb" id="neotrellis-module">
+            <div class="pcb-corner-screw screw-tl"></div>
+            <div class="pcb-corner-screw screw-tr"></div>
+            <div class="pcb-corner-screw screw-bl"></div>
+            <div class="pcb-corner-screw screw-br"></div>
+
+            <div class="pcb-header-label">
+              <span>Adafruit NeoTrellis</span>
+              <span>I2C: 0x2E</span>
+            </div>
+
+            <!-- 4x4 Keypad Grid -->
+            <div class="keypad-grid" id="keypad-grid" role="grid" aria-label="4x4 NeoTrellis Keypad">
+              <!-- Keys generated dynamically in JS -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <p class="lantern-guidance">
+        <strong>Direct Interaction:</strong> Click or drag across keycaps to stoke embers.<br>
+        <strong>Top-Row Shortcuts:</strong> [15] Brightness &bull; [11] Vigor &bull; [7] Gust &bull; [3] Standby
+      </p>
+    </section>
+
+    <!-- Right: Simulator Control Panel -->
+    <section class="controls-panel" aria-label="Simulator Controls">
+
+      <!-- Atmosphere Vigor Presets -->
+      <div class="card">
+        <div class="card-title">
+          <span>Atmospheric Vigor</span>
+          <span class="icon-tag">Preset Profile</span>
+        </div>
+        <div class="preset-group" role="radiogroup" aria-label="Fire vigor preset">
+          <button type="button" class="btn-preset" data-preset="GENTLE" id="btn-preset-gentle" role="radio" aria-checked="false">
+            <span class="preset-icon">🕯️</span>
+            <span>Gentle Hearth</span>
+          </button>
+          <button type="button" class="btn-preset active" data-preset="CAMPFIRE" id="btn-preset-campfire" role="radio" aria-checked="true">
+            <span class="preset-icon">🔥</span>
+            <span>Campfire</span>
+          </button>
+          <button type="button" class="btn-preset" data-preset="BLAZE" id="btn-preset-blaze" role="radio" aria-checked="false">
+            <span class="preset-icon">🌪️</span>
+            <span>Windblown</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Brightness & Optical Scale -->
+      <div class="card">
+        <div class="card-title">
+          <span>Optical Brightness</span>
+          <span class="icon-tag" id="val-bright-text">25% (Cozy)</span>
+        </div>
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Global Luminance Scale</span>
+            <span class="val-badge" id="val-bright">0.25</span>
+          </div>
+          <input type="range" id="slider-brightness" min="0.00" max="1.00" step="0.01" value="0.25" aria-label="Global Brightness">
+          <div class="chip-group" aria-label="Hardware Brightness Presets">
+            <button type="button" class="chip" data-b="0.10">10% Night</button>
+            <button type="button" class="chip active" data-b="0.25">25% Cozy</button>
+            <button type="button" class="chip" data-b="0.50">50% Std</button>
+            <button type="button" class="chip" data-b="0.80">80% Bright</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Interactive Triggers -->
+      <div class="card">
+        <div class="card-title">
+          <span>Physical Controls</span>
+          <span class="icon-tag">Interactive Triggers</span>
+        </div>
+        <div class="action-grid">
+          <button type="button" class="btn-action primary" id="btn-gust" title="Simulate a bellows gust or sudden draft">
+            <span>💨</span>
+            <span>Gust of Wind</span>
+          </button>
+          <button type="button" class="btn-action" id="btn-sleep" title="Toggle lantern sleep / wake state">
+            <span id="btn-sleep-icon">🌙</span>
+            <span id="btn-sleep-text">Sleep / Standby</span>
+          </button>
+        </div>
+        <div style="margin-top: 10px;">
+          <button type="button" class="btn-action" id="btn-stoke-all" style="width: 100%;" title="Stoke every cell on the hearth">
+            <span>🔥</span>
+            <span>Stoke All Embers</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Thermal Engine Parameters -->
+      <div class="card">
+        <div class="card-title">
+          <span>Thermal Engine Tuning</span>
+          <button type="button" class="chip" id="btn-reset-physics" title="Reset parameters to current vigor preset defaults">Reset</button>
+        </div>
+        
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Baseline Heat (Steady State)</span>
+            <span class="val-badge" id="val-baseline">0.42</span>
+          </div>
+          <input type="range" id="slider-baseline" min="0.10" max="0.75" step="0.01" value="0.42" aria-label="Baseline Heat">
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Decay Rate (Cooling)</span>
+            <span class="val-badge" id="val-decay">0.06</span>
+          </div>
+          <input type="range" id="slider-decay" min="0.01" max="0.16" step="0.005" value="0.06" aria-label="Cooling Decay Rate">
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Diffusion Speed (Bleed)</span>
+            <span class="val-badge" id="val-diffusion">0.16</span>
+          </div>
+          <input type="range" id="slider-diffusion" min="0.02" max="0.32" step="0.01" value="0.16" aria-label="Diffusion Speed">
+        </div>
+
+        <div class="slider-row">
+          <div class="slider-header">
+            <span>Turbulence Jitter</span>
+            <span class="val-badge" id="val-turbulence">0.07</span>
+          </div>
+          <input type="range" id="slider-turbulence" min="0.00" max="0.22" step="0.005" value="0.07" aria-label="Turbulence Noise">
+        </div>
+      </div>
+
+      <!-- Options & Toggles -->
+      <div class="card">
+        <div class="card-title">
+          <span>Display & Input Modes</span>
+          <span class="icon-tag">Options</span>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <strong>Show Heat Values</strong>
+            <span>Display raw floating point heat [0.00–1.00]</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-heat-values">
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <strong>Top-Row Shortcuts</strong>
+            <span>Keys 15, 11, 7, 3 act as hardware toggles</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-shortcuts" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div class="toggle-label">
+            <strong>Key Index Badges</strong>
+            <span>Display NeoTrellis key IDs [15..0]</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="toggle-key-indices" checked>
+            <span class="switch-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Live Diagnostics Telemetry -->
+      <div class="card">
+        <div class="card-title">
+          <span>Hearth Telemetry</span>
+          <span class="icon-tag">Hardware State</span>
+        </div>
+        <div class="telemetry-grid">
+          <div class="telemetry-item">
+            <div class="telemetry-label">Mean Temperature</div>
+            <div class="telemetry-value"><span id="tele-mean">0.42</span><small>°H</small></div>
+          </div>
+          <div class="telemetry-item">
+            <div class="telemetry-label">Peak Temperature</div>
+            <div class="telemetry-value"><span id="tele-peak">0.78</span><small>°H</small></div>
+          </div>
+          <div class="telemetry-item">
+            <div class="telemetry-label">Hearth Status</div>
+            <div class="telemetry-value" id="tele-status">Burning</div>
+          </div>
+          <div class="telemetry-item">
+            <div class="telemetry-label">Physics Timestep</div>
+            <div class="telemetry-value"><span id="tele-rate">33</span><small>Hz</small></div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <footer>
+    <p>LanternFire &bull; Compatible with CircuitPython &bull; 4×4 NeoTrellis (WS2812B NeoPixels)</p>
+  </footer>
+
+  <script>
+    /* ==========================================================================
+       LanternFire Thermal Simulation Engine (JavaScript Implementation)
+       Matches Python fire_sim.py and CircuitPython code.py exactly.
+       ========================================================================== */
+
+    // Hardware coordinate mapping: 4x4 matrix mapped to NeoTrellis key indices
+    const GRID = [
+      [15, 11, 7, 3],  // Row 0
+      [14, 10, 6, 2],  // Row 1
+      [13,  9, 5, 1],  // Row 2
+      [12,  8, 4, 0]   // Row 3
+    ];
+
+    const INDEX_TO_XY = {};
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 4; x++) {
+        INDEX_TO_XY[GRID[y][x]] = { x, y };
+      }
+    }
+
+    const BRIGHTNESS_LEVELS = [0.10, 0.25, 0.50, 0.80];
+
+    const VIGOR_PRESETS = {
+      GENTLE: {
+        name: "Gentle Hearth",
+        baseline: 0.28,
+        cooling_rate: 0.04,
+        diffusion_rate: 0.12,
+        turbulence: 0.03,
+        drift_speed: 1.2
+      },
+      CAMPFIRE: {
+        name: "Campfire",
+        baseline: 0.42,
+        cooling_rate: 0.06,
+        diffusion_rate: 0.16,
+        turbulence: 0.07,
+        drift_speed: 2.0
+      },
+      BLAZE: {
+        name: "Windblown Blaze",
+        baseline: 0.58,
+        cooling_rate: 0.08,
+        diffusion_rate: 0.20,
+        turbulence: 0.12,
+        drift_speed: 3.2
+      }
+    };
+
+    const VIGOR_ORDER = ["GENTLE", "CAMPFIRE", "BLAZE"];
+
+    // Multi-stop piecewise linear interpolation matching fire_sim.py
+    function lerpColor(c1, c2, t) {
+      return [
+        Math.trunc(c1[0] + (c2[0] - c1[0]) * t),
+        Math.trunc(c1[1] + (c2[1] - c1[1]) * t),
+        Math.trunc(c1[2] + (c2[2] - c1[2]) * t)
+      ];
+    }
+
+    function heatToRgb(heat, brightness = 1.0) {
+      const h = Math.max(0.0, Math.min(1.0, Number(heat)));
+      const b = Math.max(0.0, Math.min(1.0, Number(brightness)));
+      let rgb;
+
+      if (h <= 0.15) {
+        const t = h / 0.15;
+        rgb = lerpColor([15, 0, 0], [60, 4, 0], t);
+      } else if (h <= 0.45) {
+        const t = (h - 0.15) / 0.30;
+        rgb = lerpColor([60, 4, 0], [190, 35, 0], t);
+      } else if (h <= 0.75) {
+        const t = (h - 0.45) / 0.30;
+        rgb = lerpColor([190, 35, 0], [255, 110, 0], t);
+      } else {
+        const t = (h - 0.75) / 0.25;
+        rgb = lerpColor([255, 110, 0], [255, 230, 130], t);
+      }
+
+      return [
+        Math.max(0, Math.min(255, Math.trunc(rgb[0] * b))),
+        Math.max(0, Math.min(255, Math.trunc(rgb[1] * b))),
+        Math.max(0, Math.min(255, Math.trunc(rgb[2] * b)))
+      ];
+    }
+
+    class FireSimulation {
+      constructor(width = 4, height = 4) {
+        this.width = width;
+        this.height = height;
+        this.heat = Array.from({ length: height }, () => new Array(width).fill(0.3));
+        this.phase = Array.from({ length: height }, () => 
+          Array.from({ length: width }, () => Math.random() * 2 * Math.PI)
+        );
+        this.elapsedTime = 0.0;
+
+        this.brightnessIdx = 1; // Default 0.25 (cozy)
+        this.customBrightness = 0.25;
+        this.vigor = "CAMPFIRE";
+        this.loadVigorParams();
+      }
+
+      loadVigorParams() {
+        const params = VIGOR_PRESETS[this.vigor];
+        this.baseline = params.baseline;
+        this.coolingRate = params.cooling_rate;
+        this.diffusionRate = params.diffusion_rate;
+        this.turbulence = params.turbulence;
+        this.driftSpeed = params.drift_speed;
+      }
+
+      get brightness() {
+        return this.customBrightness;
+      }
+
+      setBrightness(level) {
+        const val = Math.max(0.0, Math.min(1.0, parseFloat(level)));
+        this.customBrightness = val;
+        // Also sync closest brightness index
+        let closestIdx = 0;
+        let minDiff = 999.0;
+        for (let i = 0; i < BRIGHTNESS_LEVELS.length; i++) {
+          const diff = Math.abs(BRIGHTNESS_LEVELS[i] - val);
+          if (diff < minDiff) {
+            minDiff = diff;
+            closestIdx = i;
+          }
+        }
+        this.brightnessIdx = closestIdx;
+        return this.customBrightness;
+      }
+
+      cycleBrightness() {
+        this.brightnessIdx = (this.brightnessIdx + 1) % BRIGHTNESS_LEVELS.length;
+        this.customBrightness = BRIGHTNESS_LEVELS[this.brightnessIdx];
+        return this.customBrightness;
+      }
+
+      setVigor(presetName) {
+        if (presetName in VIGOR_PRESETS) {
+          this.vigor = presetName;
+          this.loadVigorParams();
+        }
+        return this.vigor;
+      }
+
+      cycleVigor() {
+        const currIdx = VIGOR_ORDER.indexOf(this.vigor);
+        const nextIdx = (currIdx + 1) % VIGOR_ORDER.length;
+        this.vigor = VIGOR_ORDER[nextIdx];
+        this.loadVigorParams();
+        return this.vigor;
+      }
+
+      stoke(keyIndex) {
+        if (!(keyIndex in INDEX_TO_XY)) return;
+        const { x: cx, y: cy } = INDEX_TO_XY[keyIndex];
+        this.heat[cy][cx] = 1.0;
+
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const nx = cx + dx;
+            const ny = cy + dy;
+            if (nx >= 0 && nx < this.width && ny >= 0 && ny < this.height) {
+              if (Math.abs(dx) + Math.abs(dy) === 1) {
+                this.heat[ny][nx] = Math.min(1.0, this.heat[ny][nx] + 0.45);
+              } else if (Math.abs(dx) === 1 && Math.abs(dy) === 1) {
+                this.heat[ny][nx] = Math.min(1.0, this.heat[ny][nx] + 0.20);
+              }
+            }
+          }
+        }
+      }
+
+      gust() {
+        for (let y = 0; y < this.height; y++) {
+          for (let x = 0; x < this.width; x++) {
+            if (Math.random() < 0.6) {
+              this.heat[y][x] = Math.min(1.0, this.heat[y][x] + (0.3 + Math.random() * 0.3));
+            }
+          }
+        }
+      }
+
+      step(dt = 0.03) {
+        this.elapsedTime += dt;
+        const w = this.width;
+        const h = this.height;
+        const alpha = this.diffusionRate;
+
+        // 1. Diffusion step
+        const newHeat = Array.from({ length: h }, () => new Array(w).fill(0));
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const neighbors = [];
+            for (const [dx, dy] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+              const nx = x + dx;
+              const ny = y + dy;
+              if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+                neighbors.push(this.heat[ny][nx]);
+              }
+            }
+            const avgNeighbor = neighbors.reduce((a, b) => a + b, 0) / neighbors.length;
+            newHeat[y][x] = (1.0 - alpha) * this.heat[y][x] + alpha * avgNeighbor;
+          }
+        }
+
+        // 2. Wave breathing, turbulence, and decay
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            let val = newHeat[y][x];
+            const wave = Math.sin(this.elapsedTime * this.driftSpeed + this.phase[y][x]) * 0.08;
+            const turb = (Math.random() * 2 - 1) * this.turbulence;
+            const decay = (this.baseline - val) * this.coolingRate;
+
+            val += decay + wave + turb;
+            newHeat[y][x] = Math.max(0.0, Math.min(1.0, val));
+          }
+        }
+
+        this.heat = newHeat;
+
+        // 3. Format output for hardware pixel indices 0..15
+        const output = new Array(w * h);
+        const bright = this.brightness;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const idx = GRID[y][x];
+            output[idx] = heatToRgb(this.heat[y][x], bright);
+          }
+        }
+
+        return output;
+      }
+    }
+
+    /* ==========================================================================
+       UI Controller & Web Application Logic
+       ========================================================================== */
+
+    const sim = new FireSimulation();
+    let isSleeping = false;
+    let sleepFade = 1.0;
+    let isDragging = false;
+    let showHeatValues = false;
+    let topRowShortcuts = true;
+    let showKeyIndices = true;
+
+    // DOM Elements
+    const keypadGridEl = document.getElementById("keypad-grid");
+    const hearthGlowEl = document.getElementById("hearth-glow");
+    const lanternHousingEl = document.getElementById("lantern-housing");
+    const standbyBannerEl = document.getElementById("standby-banner");
+
+    // Badges & Telemetry
+    const badgeStatusEl = document.getElementById("badge-status");
+    const badgeVigorEl = document.getElementById("badge-vigor");
+    const badgeBrightEl = document.getElementById("badge-bright");
+    const badgeFpsEl = document.getElementById("badge-fps");
+
+    const teleMeanEl = document.getElementById("tele-mean");
+    const telePeakEl = document.getElementById("tele-peak");
+    const teleStatusEl = document.getElementById("tele-status");
+    const teleRateEl = document.getElementById("tele-rate");
+
+    // Sliders
+    const sliderBrightnessEl = document.getElementById("slider-brightness");
+    const valBrightEl = document.getElementById("val-bright");
+    const valBrightTextEl = document.getElementById("val-bright-text");
+
+    const sliderBaselineEl = document.getElementById("slider-baseline");
+    const valBaselineEl = document.getElementById("val-baseline");
+
+    const sliderDecayEl = document.getElementById("slider-decay");
+    const valDecayEl = document.getElementById("val-decay");
+
+    const sliderDiffusionEl = document.getElementById("slider-diffusion");
+    const valDiffusionEl = document.getElementById("val-diffusion");
+
+    const sliderTurbulenceEl = document.getElementById("slider-turbulence");
+    const valTurbulenceEl = document.getElementById("val-turbulence");
+
+    // Toggles
+    const toggleHeatEl = document.getElementById("toggle-heat-values");
+    const toggleShortcutsEl = document.getElementById("toggle-shortcuts");
+    const toggleKeyIndicesEl = document.getElementById("toggle-key-indices");
+
+    // Action buttons
+    const btnGustEl = document.getElementById("btn-gust");
+    const btnSleepEl = document.getElementById("btn-sleep");
+    const btnSleepTextEl = document.getElementById("btn-sleep-text");
+    const btnSleepIconEl = document.getElementById("btn-sleep-icon");
+    const btnStokeAllEl = document.getElementById("btn-stoke-all");
+    const btnResetPhysicsEl = document.getElementById("btn-reset-physics");
+
+    // Map of key elements
+    const keyElements = {};
+
+    // Shortcut metadata for Row 0
+    const SHORTCUT_INFO = {
+      15: { label: "🔅 BRIGHT", color: [255, 255, 255] },
+      11: { label: "🔥 VIGOR",  color: [255, 180, 50] },
+      7:  { label: "💨 GUST",   color: [255, 230, 180] },
+      3:  { label: "🌙 SLEEP",  color: [180, 160, 240] }
+    };
+
+    // Initialize 4x4 Grid DOM Elements
+    function buildKeypadDOM() {
+      keypadGridEl.innerHTML = "";
+      for (let y = 0; y < 4; y++) {
+        for (let x = 0; x < 4; x++) {
+          const keyId = GRID[y][x];
+          const keyEl = document.createElement("button");
+          keyEl.type = "button";
+          keyEl.className = "keycap";
+          keyEl.setAttribute("data-key", keyId);
+          keyEl.setAttribute("data-x", x);
+          keyEl.setAttribute("data-y", y);
+          keyEl.setAttribute("role", "gridcell");
+          keyEl.setAttribute("aria-label", `Key ${keyId}`);
+
+          // Key index label
+          const idxEl = document.createElement("span");
+          idxEl.className = "key-index";
+          idxEl.textContent = keyId;
+          keyEl.appendChild(idxEl);
+
+          // Top row shortcut label
+          if (keyId in SHORTCUT_INFO) {
+            const scEl = document.createElement("span");
+            scEl.className = "key-shortcut";
+            scEl.textContent = SHORTCUT_INFO[keyId].label;
+            keyEl.appendChild(scEl);
+          }
+
+          // Heat value display
+          const heatEl = document.createElement("span");
+          heatEl.className = "key-heat-val";
+          heatEl.textContent = "0.30";
+          keyEl.appendChild(heatEl);
+
+          // Attach pointer events for stoking & shortcuts
+          keyEl.addEventListener("pointerdown", (e) => onKeyPointerDown(e, keyId, keyEl));
+          keyEl.addEventListener("pointerenter", (e) => onKeyPointerEnter(e, keyId, keyEl));
+
+          keypadGridEl.appendChild(keyEl);
+          keyElements[keyId] = {
+            element: keyEl,
+            indexEl: idxEl,
+            heatEl: heatEl,
+            x: x,
+            y: y,
+            flashTimer: null
+          };
+        }
+      }
+    }
+
+    // Key Press & Interaction Handlers
+    function triggerKeyFlash(keyId, rgb) {
+      const entry = keyElements[keyId];
+      if (!entry) return;
+      entry.element.classList.add("pressed");
+      entry.element.style.background = `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+      entry.element.style.boxShadow = `0 0 35px rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]}), inset 0 0 10px #ffffff`;
+      if (entry.flashTimer) clearTimeout(entry.flashTimer);
+      entry.flashTimer = setTimeout(() => {
+        entry.element.classList.remove("pressed");
+        entry.flashTimer = null;
+      }, 90);
+    }
+
+    function wakeLantern() {
+      if (isSleeping) {
+        isSleeping = false;
+        sleepFade = 1.0;
+        lanternHousingEl.classList.remove("is-asleep");
+        badgeStatusEl.textContent = "Simulation Active";
+        badgeStatusEl.classList.add("active", "pulse-dot");
+        btnSleepTextEl.textContent = "Sleep / Standby";
+        btnSleepIconEl.textContent = "🌙";
+        teleStatusEl.textContent = "Burning";
+        updateAllUIControls();
+      }
+    }
+
+    function toggleSleep() {
+      if (isSleeping) {
+        wakeLantern();
+      } else {
+        isSleeping = true;
+        lanternHousingEl.classList.add("is-asleep");
+        badgeStatusEl.textContent = "Standby (Asleep)";
+        badgeStatusEl.classList.remove("active", "pulse-dot");
+        btnSleepTextEl.textContent = "Wake Lantern";
+        btnSleepIconEl.textContent = "☀️";
+        teleStatusEl.textContent = "Sleeping";
+      }
+    }
+
+    function handleKeyActivation(keyId, isDirectClick = true) {
+      // If asleep, ANY click revives the fire!
+      if (isSleeping) {
+        wakeLantern();
+        sim.stoke(keyId);
+        triggerKeyFlash(keyId, [255, 200, 100]);
+        return;
+      }
+
+      // If top-row shortcut is active and direct click
+      if (topRowShortcuts && isDirectClick && (keyId in SHORTCUT_INFO)) {
+        if (keyId === 15) {
+          // Key 15: Brightness cycle
+          const b = sim.cycleBrightness();
+          triggerKeyFlash(15, [255, 255, 255]);
+          updateBrightnessUI(b);
+          return;
+        } else if (keyId === 11) {
+          // Key 11: Vigor cycle
+          const v = sim.cycleVigor();
+          triggerKeyFlash(11, [255, 180, 50]);
+          updateVigorUI(v);
+          return;
+        } else if (keyId === 7) {
+          // Key 7: Wind gust
+          triggerKeyFlash(7, [255, 220, 150]);
+          triggerGust();
+          return;
+        } else if (keyId === 3) {
+          // Key 3: Sleep / Standby
+          triggerKeyFlash(3, [160, 140, 220]);
+          toggleSleep();
+          return;
+        }
+      }
+
+      // Default: Stoke coals!
+      sim.stoke(keyId);
+      triggerKeyFlash(keyId, [255, 230, 130]);
+    }
+
+    function onKeyPointerDown(e, keyId, keyEl) {
+      isDragging = true;
+      keyEl.setPointerCapture(e.pointerId);
+      handleKeyActivation(keyId, true);
+    }
+
+    function onKeyPointerEnter(e, keyId, keyEl) {
+      if (isDragging) {
+        // Drag-stoking
+        if (isSleeping) {
+          wakeLantern();
+        }
+        sim.stoke(keyId);
+        triggerKeyFlash(keyId, [255, 200, 100]);
+      }
+    }
+
+    window.addEventListener("pointerup", () => {
+      isDragging = false;
+    });
+
+    window.addEventListener("pointercancel", () => {
+      isDragging = false;
+    });
+
+    // Standby banner click to wake
+    standbyBannerEl.addEventListener("click", () => {
+      wakeLantern();
+    });
+
+    // Bellows gust trigger
+    function triggerGust() {
+      wakeLantern();
+      sim.gust();
+      // Visual flair on housing
+      lanternHousingEl.style.filter = "brightness(1.2)";
+      setTimeout(() => {
+        lanternHousingEl.style.filter = "none";
+      }, 150);
+    }
+
+    btnGustEl.addEventListener("click", () => {
+      triggerGust();
+    });
+
+    btnSleepEl.addEventListener("click", () => {
+      toggleSleep();
+    });
+
+    btnStokeAllEl.addEventListener("click", () => {
+      wakeLantern();
+      for (let i = 0; i < 16; i++) {
+        sim.stoke(i);
+      }
+    });
+
+    // Preset selector buttons
+    document.querySelectorAll(".btn-preset").forEach(btn => {
+      btn.addEventListener("click", () => {
+        wakeLantern();
+        const preset = btn.getAttribute("data-preset");
+        sim.setVigor(preset);
+        updateVigorUI(preset);
+      });
+    });
+
+    function updateVigorUI(preset) {
+      document.querySelectorAll(".btn-preset").forEach(btn => {
+        const isCurrent = btn.getAttribute("data-preset") === preset;
+        btn.classList.toggle("active", isCurrent);
+        btn.setAttribute("aria-checked", isCurrent ? "true" : "false");
+      });
+      badgeVigorEl.textContent = `Preset: ${VIGOR_PRESETS[preset].name}`;
+      // Sync sliders with preset defaults
+      sliderBaselineEl.value = sim.baseline;
+      valBaselineEl.textContent = sim.baseline.toFixed(2);
+
+      sliderDecayEl.value = sim.coolingRate;
+      valDecayEl.textContent = sim.coolingRate.toFixed(3);
+
+      sliderDiffusionEl.value = sim.diffusionRate;
+      valDiffusionEl.textContent = sim.diffusionRate.toFixed(2);
+
+      sliderTurbulenceEl.value = sim.turbulence;
+      valTurbulenceEl.textContent = sim.turbulence.toFixed(3);
+    }
+
+    // Brightness Slider & Presets
+    sliderBrightnessEl.addEventListener("input", (e) => {
+      const val = parseFloat(e.target.value);
+      sim.setBrightness(val);
+      updateBrightnessUI(val, false);
+    });
+
+    document.querySelectorAll(".chip[data-b]").forEach(chip => {
+      chip.addEventListener("click", () => {
+        const val = parseFloat(chip.getAttribute("data-b"));
+        sim.setBrightness(val);
+        updateBrightnessUI(val, true);
+      });
+    });
+
+    function getBrightnessDescription(b) {
+      if (b <= 0.15) return `${Math.round(b * 100)}% (Nightlight)`;
+      if (b <= 0.35) return `${Math.round(b * 100)}% (Cozy)`;
+      if (b <= 0.65) return `${Math.round(b * 100)}% (Standard)`;
+      return `${Math.round(b * 100)}% (Bright)`;
+    }
+
+    function updateBrightnessUI(b, syncSlider = true) {
+      if (syncSlider) sliderBrightnessEl.value = b;
+      valBrightEl.textContent = b.toFixed(2);
+      valBrightTextEl.textContent = getBrightnessDescription(b);
+      badgeBrightEl.textContent = `Brightness: ${Math.round(b * 100)}%`;
+
+      document.querySelectorAll(".chip[data-b]").forEach(chip => {
+        const chipVal = parseFloat(chip.getAttribute("data-b"));
+        chip.classList.toggle("active", Math.abs(chipVal - b) < 0.05);
+      });
+    }
+
+    // Parameter sliders
+    sliderBaselineEl.addEventListener("input", (e) => {
+      sim.baseline = parseFloat(e.target.value);
+      valBaselineEl.textContent = sim.baseline.toFixed(2);
+    });
+
+    sliderDecayEl.addEventListener("input", (e) => {
+      sim.coolingRate = parseFloat(e.target.value);
+      valDecayEl.textContent = sim.coolingRate.toFixed(3);
+    });
+
+    sliderDiffusionEl.addEventListener("input", (e) => {
+      sim.diffusionRate = parseFloat(e.target.value);
+      valDiffusionEl.textContent = sim.diffusionRate.toFixed(2);
+    });
+
+    sliderTurbulenceEl.addEventListener("input", (e) => {
+      sim.turbulence = parseFloat(e.target.value);
+      valTurbulenceEl.textContent = sim.turbulence.toFixed(3);
+    });
+
+    btnResetPhysicsEl.addEventListener("click", () => {
+      sim.loadVigorParams();
+      updateVigorUI(sim.vigor);
+    });
+
+    // Display Toggles
+    toggleHeatEl.addEventListener("change", (e) => {
+      showHeatValues = e.target.checked;
+      keypadGridEl.classList.toggle("show-heat", showHeatValues);
+    });
+
+    toggleShortcutsEl.addEventListener("change", (e) => {
+      topRowShortcuts = e.target.checked;
+    });
+
+    toggleKeyIndicesEl.addEventListener("change", (e) => {
+      showKeyIndices = e.target.checked;
+      document.querySelectorAll(".key-index").forEach(el => {
+        el.style.opacity = showKeyIndices ? "0.85" : "0";
+      });
+    });
+
+    function updateAllUIControls() {
+      updateVigorUI(sim.vigor);
+      updateBrightnessUI(sim.brightness);
+    }
+
+    /* ==========================================================================
+       Smooth 60 FPS Render Loop & Fixed 33 Hz Thermal Physics
+       ========================================================================== */
+
+    let lastFrameTime = performance.now();
+    let physicsAccumulator = 0;
+    const PHYSICS_STEP_MS = 1000 / 33.33; // ~30-35 Hz matching hardware step()
+    let frameCount = 0;
+    let fpsTimer = performance.now();
+
+    function renderLoop(now) {
+      let delta = now - lastFrameTime;
+      lastFrameTime = now;
+      if (delta > 200) delta = 200; // Cap spiral of death if tab was inactive
+
+      physicsAccumulator += delta;
+
+      // Handle Sleep Mode Fading
+      if (isSleeping) {
+        if (sleepFade > 0.0) {
+          sleepFade = Math.max(0.0, sleepFade - 0.035);
+        }
+      } else {
+        if (sleepFade < 1.0) {
+          sleepFade = Math.min(1.0, sleepFade + 0.08);
+        }
+      }
+
+      // Fixed timestep physics update matching hardware clock (~33Hz)
+      let stepped = false;
+      while (physicsAccumulator >= PHYSICS_STEP_MS) {
+        if (!isSleeping || sleepFade > 0.0) {
+          sim.step(0.03);
+          stepped = true;
+        }
+        physicsAccumulator -= PHYSICS_STEP_MS;
+      }
+
+      // Render Visual State to Screen
+      renderFrame();
+
+      // FPS Counter
+      frameCount++;
+      if (now - fpsTimer >= 1000) {
+        badgeFpsEl.textContent = `${frameCount} FPS`;
+        frameCount = 0;
+        fpsTimer = now;
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    function renderFrame() {
+      let totalHeat = 0;
+      let peakHeat = 0;
+      let sumR = 0, sumG = 0, sumB = 0;
+      const effectiveBrightness = sim.brightness * sleepFade;
+
+      for (let y = 0; y < 4; y++) {
+        for (let x = 0; x < 4; x++) {
+          const keyId = GRID[y][x];
+          const entry = keyElements[keyId];
+          if (!entry) continue;
+
+          const heat = sim.heat[y][x];
+          totalHeat += heat;
+          if (heat > peakHeat) peakHeat = heat;
+
+          // Compute color using identical formula
+          const [r, g, b] = heatToRgb(heat, effectiveBrightness);
+          sumR += r;
+          sumG += g;
+          sumB += b;
+
+          // Don't overwrite background during momentary flash animation
+          if (!entry.flashTimer) {
+            // Incandescent core glow calculation
+            const coreAlpha = Math.min(1.0, heat * 0.75 * sleepFade);
+            entry.element.style.background = `radial-gradient(circle at 50% 50%, rgba(255, 240, 200, ${coreAlpha}) 0%, rgb(${r}, ${g}, ${b}) 70%)`;
+            
+            // Bloom box-shadow
+            const glowStrength = (0.3 + heat * 0.7) * sleepFade;
+            const shadowSpread = Math.round(10 + heat * 20);
+            entry.element.style.boxShadow = `
+              0 0 ${shadowSpread}px rgba(${r}, ${g}, ${b}, ${glowStrength.toFixed(2)}),
+              inset 0 1px 2px rgba(255, 255, 255, ${(0.2 * sleepFade).toFixed(2)}),
+              inset 0 -2px 4px rgba(0, 0, 0, 0.6)
+            `;
+          }
+
+          // Update debug heat readout
+          if (showHeatValues) {
+            entry.heatEl.textContent = heat.toFixed(2);
+          }
+        }
+      }
+
+      // Ambient radial bloom reflecting fire onto the lantern hearth floor
+      const avgR = Math.round((sumR / 16));
+      const avgG = Math.round((sumG / 16));
+      const avgB = Math.round((sumB / 16));
+      const avgAlpha = (0.15 + (totalHeat / 16) * 0.45) * sleepFade;
+
+      hearthGlowEl.style.background = `radial-gradient(ellipse at 50% 50%, rgba(${avgR}, ${avgG}, ${avgB}, ${avgAlpha.toFixed(2)}) 0%, transparent 75%)`;
+      hearthGlowEl.style.opacity = sleepFade.toFixed(2);
+
+      // Telemetry update
+      const meanHeat = totalHeat / 16;
+      teleMeanEl.textContent = meanHeat.toFixed(2);
+      telePeakEl.textContent = peakHeat.toFixed(2);
+    }
+
+    // Startup Initialization
+    buildKeypadDOM();
+    updateAllUIControls();
+    // Warm startup flare sequence
+    sim.gust();
+    requestAnimationFrame(renderLoop);
+  </script>
+</body>
+</html>

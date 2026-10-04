@@ -1184,6 +1184,9 @@
 
     class FireSimulation {
       constructor(width = 4, height = 4) {
+        if (width !== 4 || height !== 4) {
+          throw new Error("Only 4x4 grids are currently supported by NeoTrellis hardware mapping");
+        }
         this.width = width;
         this.height = height;
         this.heat = Array.from({ length: height }, () => new Array(width).fill(0.3));
@@ -1539,7 +1542,6 @@
 
     function onKeyPointerDown(e, keyId, keyEl) {
       isDragging = true;
-      keyEl.setPointerCapture(e.pointerId);
       handleKeyActivation(keyId, true);
     }
 

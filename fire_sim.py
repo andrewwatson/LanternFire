@@ -88,6 +88,8 @@ def heat_to_rgb(heat, brightness=1.0):
 
 class FireSimulation:
     def __init__(self, width=4, height=4):
+        if width != 4 or height != 4:
+            raise ValueError("Only 4x4 grids are currently supported by NeoTrellis hardware mapping")
         self.width = width
         self.height = height
         self.heat = [[0.3 for _ in range(width)] for _ in range(height)]
@@ -95,6 +97,7 @@ class FireSimulation:
         self.elapsed_time = 0.0
 
         self.brightness_idx = 1  # Default 0.25 (cozy)
+        self._brightness = BRIGHTNESS_LEVELS[self.brightness_idx]
         self.vigor = "CAMPFIRE"
         self._load_vigor_params()
 
@@ -108,22 +111,24 @@ class FireSimulation:
 
     @property
     def brightness(self):
-        return BRIGHTNESS_LEVELS[self.brightness_idx]
+        return self._brightness
 
     def set_brightness(self, level):
+        self._brightness = max(0.0, min(1.0, float(level)))
         # Find closest level
         closest_idx = 0
         min_diff = 999.0
         for i, val in enumerate(BRIGHTNESS_LEVELS):
-            diff = abs(val - level)
+            diff = abs(val - self._brightness)
             if diff < min_diff:
                 min_diff = diff
                 closest_idx = i
         self.brightness_idx = closest_idx
-        return self.brightness
+        return self._brightness
 
     def cycle_brightness(self):
         self.brightness_idx = (self.brightness_idx + 1) % len(BRIGHTNESS_LEVELS)
+        self._brightness = BRIGHTNESS_LEVELS[self.brightness_idx]
         return self.brightness
 
     def set_vigor(self, preset_name):

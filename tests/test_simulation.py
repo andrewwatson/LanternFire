@@ -81,13 +81,35 @@ class TestFireSimulation(unittest.TestCase):
         self.assertNotEqual(v_init, v_next)
         self.assertIn(v_next, VIGOR_PRESETS)
 
+    def test_grid_dimension_validation(self):
+        # Default 4x4 works
+        sim = FireSimulation()
+        self.assertEqual(sim.width, 4)
+        self.assertEqual(sim.height, 4)
+
+        # Non-4x4 raises ValueError
+        with self.assertRaises(ValueError):
+            FireSimulation(width=5, height=5)
+        with self.assertRaises(ValueError):
+            FireSimulation(width=3, height=4)
+        with self.assertRaises(ValueError):
+            FireSimulation(width=4, height=5)
+
     def test_setters_and_edge_cases(self):
         sim = FireSimulation()
-        # set_brightness
+        # continuous set_brightness
         sim.set_brightness(0.20)
-        self.assertEqual(sim.brightness, 0.25)
-        sim.set_brightness(0.9)
-        self.assertEqual(sim.brightness, 0.80)
+        self.assertAlmostEqual(sim.brightness, 0.20, places=2)
+        # Closest preset to 0.20 is index 1 (0.25). Next cycle should pick up index 2 (0.50).
+        next_b = sim.cycle_brightness()
+        self.assertEqual(next_b, 0.50)
+        self.assertEqual(sim.brightness, 0.50)
+
+        # Clamping
+        sim.set_brightness(1.5)
+        self.assertEqual(sim.brightness, 1.0)
+        sim.set_brightness(-0.2)
+        self.assertEqual(sim.brightness, 0.0)
 
         # set_vigor
         sim.set_vigor("BLAZE")

@@ -24,25 +24,25 @@ BRIGHTNESS_LEVELS = [0.10, 0.25, 0.50, 0.80]
 # Atmospheric fire vigor presets
 VIGOR_PRESETS = {
     "GENTLE": {
-        "baseline": 0.28,
-        "cooling_rate": 0.04,
-        "diffusion_rate": 0.12,
-        "turbulence": 0.03,
-        "drift_speed": 1.2
+        "baseline": 0.30,
+        "cooling_rate": 0.08,
+        "diffusion_rate": 0.14,
+        "turbulence": 0.06,
+        "drift_speed": 3.5
     },
     "CAMPFIRE": {
-        "baseline": 0.42,
-        "cooling_rate": 0.06,
-        "diffusion_rate": 0.16,
-        "turbulence": 0.07,
-        "drift_speed": 2.0
+        "baseline": 0.44,
+        "cooling_rate": 0.12,
+        "diffusion_rate": 0.18,
+        "turbulence": 0.12,
+        "drift_speed": 6.0
     },
     "BLAZE": {
         "baseline": 0.58,
-        "cooling_rate": 0.08,
-        "diffusion_rate": 0.20,
-        "turbulence": 0.12,
-        "drift_speed": 3.2
+        "cooling_rate": 0.16,
+        "diffusion_rate": 0.22,
+        "turbulence": 0.20,
+        "drift_speed": 9.5
     }
 }
 VIGOR_ORDER = ["GENTLE", "CAMPFIRE", "BLAZE"]
@@ -194,7 +194,7 @@ class FireSimulation:
             for x in range(w):
                 val = new_heat[y][x]
                 # Low-frequency wave
-                wave = math.sin(self.elapsed_time * self.drift_speed + self.phase[y][x]) * 0.08
+                wave = math.sin(self.elapsed_time * self.drift_speed + self.phase[y][x]) * 0.12
                 # Random turbulence
                 turb = random.uniform(-self.turbulence, self.turbulence)
                 # Decay towards baseline

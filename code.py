@@ -24,6 +24,8 @@ while trellis is None:
 
 # Hardware brightness is kept at 1.0; brightness is controlled via color scaling in fire_sim
 trellis.brightness = 1.0
+# Disable auto_write so all 16 pixels update in a single fast I2C batch instead of 16 separate transactions
+trellis.pixels.auto_write = False
 
 # Initialize Fire Simulation
 sim = FireSimulation()
@@ -50,6 +52,7 @@ def handle_key(event):
             print(f"Brightness set to: {int(b * 100)}%")
             # Quick flash at key 15
             trellis.pixels[15] = (255, 255, 255)
+            trellis.pixels.show()
             time.sleep(0.05)
             return
 
@@ -58,6 +61,7 @@ def handle_key(event):
             print(f"Fire vigor set to: {v}")
             # Quick flash at key 11
             trellis.pixels[11] = (255, 180, 50)
+            trellis.pixels.show()
             time.sleep(0.05)
             return
 
@@ -84,6 +88,7 @@ for i in range(16):
 print("Lighting lantern...")
 for i in range(16):
     trellis.pixels[i] = (20, 2, 0)
+trellis.pixels.show()
 time.sleep(0.3)
 sim.gust()
 
@@ -103,11 +108,12 @@ while True:
     last_tick = now
 
     if not is_sleeping:
-        # Active burning animation
-        pixel_colors = sim.step(dt if dt < 0.1 else 0.03)
+        # Active burning animation - step physics and transmit single I2C batch
+        pixel_colors = sim.step(dt if dt < 0.2 else 0.03)
         for i in range(16):
             trellis.pixels[i] = pixel_colors[i]
-        time.sleep(0.025)  # Target ~35 FPS
+        trellis.pixels.show()
+        time.sleep(0.005)  # Yield briefly
     else:
         # Sleep mode: fade to black and idle slowly
         if sleep_fade > 0.0:
@@ -115,9 +121,11 @@ while True:
             for i in range(16):
                 c = trellis.pixels[i]
                 trellis.pixels[i] = (int(c[0] * 0.7), int(c[1] * 0.7), int(c[2] * 0.7))
+            trellis.pixels.show()
             time.sleep(0.05)
             if sleep_fade == 0.0:
                 for i in range(16):
                     trellis.pixels[i] = (0, 0, 0)
+                trellis.pixels.show()
         else:
             time.sleep(0.1)  # Low-power polling

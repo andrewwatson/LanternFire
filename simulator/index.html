@@ -1121,27 +1121,27 @@
     const VIGOR_PRESETS = {
       GENTLE: {
         name: "Gentle Hearth",
-        baseline: 0.28,
-        cooling_rate: 0.04,
-        diffusion_rate: 0.12,
-        turbulence: 0.03,
-        drift_speed: 1.2
+        baseline: 0.30,
+        cooling_rate: 0.08,
+        diffusion_rate: 0.14,
+        turbulence: 0.06,
+        drift_speed: 3.5
       },
       CAMPFIRE: {
         name: "Campfire",
-        baseline: 0.42,
-        cooling_rate: 0.06,
-        diffusion_rate: 0.16,
-        turbulence: 0.07,
-        drift_speed: 2.0
+        baseline: 0.44,
+        cooling_rate: 0.12,
+        diffusion_rate: 0.18,
+        turbulence: 0.12,
+        drift_speed: 6.0
       },
       BLAZE: {
         name: "Windblown Blaze",
         baseline: 0.58,
-        cooling_rate: 0.08,
-        diffusion_rate: 0.20,
-        turbulence: 0.12,
-        drift_speed: 3.2
+        cooling_rate: 0.16,
+        diffusion_rate: 0.22,
+        turbulence: 0.20,
+        drift_speed: 9.5
       }
     };
 
@@ -1310,7 +1310,7 @@
         for (let y = 0; y < h; y++) {
           for (let x = 0; x < w; x++) {
             let val = newHeat[y][x];
-            const wave = Math.sin(this.elapsedTime * this.driftSpeed + this.phase[y][x]) * 0.08;
+            const wave = Math.sin(this.elapsedTime * this.driftSpeed + this.phase[y][x]) * 0.12;
             const turb = (Math.random() * 2 - 1) * this.turbulence;
             const decay = (this.baseline - val) * this.coolingRate;
 

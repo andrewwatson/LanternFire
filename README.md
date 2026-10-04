@@ -69,34 +69,35 @@ Connect the 4-pin I2C header on the Adafruit NeoTrellis to your Feather / microc
 
 ---
 
-## CircuitPython Installation & Setup
+## CircuitPython Installation & Quick Deploy
 
-### 1. Flash CircuitPython
-Ensure your board is running **CircuitPython 8.x or 9.x**. If needed, download the latest UF2 bootloader from [circuitpython.org](https://circuitpython.org) and drop it onto your board in bootloader mode.
-
-### 2. Install Required Libraries
-Download the [Adafruit CircuitPython Library Bundle](https://circuitpython.org/libraries) matching your CircuitPython version. Copy the following library folders/files into the `lib/` directory on your `CIRCUITPY` drive:
-
+### Option A: One-Command Copy Script (Easiest)
+With your CircuitPython board plugged in over USB:
+```bash
+./copy_to_circuitpy.sh
 ```
-CIRCUITPY/
-├── lib/
-│   ├── adafruit_bus_device/
-│   └── adafruit_neotrellis/
-```
+This automatically detects `/Volumes/CIRCUITPY`, copies `code.py`, `fire_sim.py`, and all required libraries (`adafruit_bus_device`, `adafruit_neotrellis`, `adafruit_seesaw`) into `CIRCUITPY/lib/`, flushes the disk buffers, and restarts the fire animation!
 
-### 3. Deploy LanternFire Firmware
-Copy `code.py` and `fire_sim.py` from this repository directly into the root directory of your `CIRCUITPY` drive:
-
+### Option B: Drag-and-Drop via Finder / Explorer
+All code and dependencies are pre-assembled in [`deploy/CIRCUITPY/`](file:///Users/andy/development/projects/active/LanternFire/deploy/CIRCUITPY).
+Simply open the folder:
+```bash
+open deploy/CIRCUITPY
 ```
+Select everything inside (`code.py`, `fire_sim.py`, and `lib/`) and drag it directly onto your `CIRCUITPY` drive.
+
+### Directory Layout on CIRCUITPY
+```text
 CIRCUITPY/
 ├── code.py              <-- Firmware entry point & I2C/keypad handler
 ├── fire_sim.py          <-- Thermal simulation kernel & color mapper
 └── lib/
     ├── adafruit_bus_device/
-    └── adafruit_neotrellis/
+    ├── adafruit_neotrellis/
+    └── adafruit_seesaw/
 ```
 
-Once copied, CircuitPython will automatically soft-reboot and begin lighting the lantern!
+Once copied, CircuitPython automatically soft-reboots and immediately begins illuminating the lantern!
 
 ### 4. Monitor via Serial Console (Optional)
 Connect via any serial terminal at `115200` baud to view diagnostic messages:

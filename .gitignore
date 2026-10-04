@@ -1,0 +1,16 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# macOS metadata
+.DS_Store
+
+# SDD / Superpowers internal artifacts
+.superpowers/
+
+# Editor and environment
+.vscode/
+.idea/
+*.swp
+*.swo
